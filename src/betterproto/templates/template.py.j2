@@ -31,6 +31,9 @@ from pydantic import {% for i in output_file.pydantic_imports|sort %}{{ i }}{% i
 {% endif %}
 
 import betterproto
+{% if output_file.serialized_descriptor %}
+from google.protobuf import descriptor_pool as _descriptor_pool
+{% endif %}
 {% if output_file.services %}
 from betterproto.grpc.grpclib_server import ServiceBase
 import grpclib
@@ -46,6 +49,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 {% for i in output_file.imports_type_checking_only|sort %}    {{ i }}
 {% endfor %}
+{% endif %}
+
+{% if output_file.serialized_descriptor %}
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile({{output_file.serialized_descriptor}})
 {% endif %}
 
 {% if output_file.enums %}{% for enum in output_file.enums %}

@@ -242,7 +242,7 @@ class OutputTemplate:
 
     parent_request: PluginRequestCompiler
     package_proto_obj: FileDescriptorProto
-    input_files: List[str] = field(default_factory=list)
+    input_files: List[FileDescriptorProto] = field(default_factory=list)
     imports: Set[str] = field(default_factory=set)
     datetime_imports: Set[str] = field(default_factory=set)
     typing_imports: Set[str] = field(default_factory=set)
@@ -254,6 +254,7 @@ class OutputTemplate:
     imports_type_checking_only: Set[str] = field(default_factory=set)
     pydantic_dataclasses: bool = False
     output: bool = True
+    serialized_descriptor: Optional[bytes] = None
 
     @property
     def package(self) -> str:

@@ -103,6 +103,7 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
     # get the references to input/output messages for each service
     for output_package_name, output_package in request_data.output_packages.items():
         for proto_input_file in output_package.input_files:
+            output_package.serialized_descriptor = proto_input_file.SerializeToString()
             for item, path in traverse(proto_input_file):
                 read_protobuf_type(
                     source_file=proto_input_file,
