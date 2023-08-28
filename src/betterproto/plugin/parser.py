@@ -121,7 +121,7 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
             pb2_file_name = proto_input_file.name.replace(".proto", "_pb2.py")
             output_package.serialized_descriptor = _get_serialized_descriptor(
                 pb2_file_name=pb2_file_name,
-                remove_pb2=pb2_file_name not in existing_pb2_file_names
+                remove_pb2=pb2_file_name not in existing_pb2_file_names,
             )
             for item, path in traverse(proto_input_file):
                 read_protobuf_type(
@@ -146,6 +146,17 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
         # Add files to the response object
         output_path = pathlib.Path(*output_package_name.split("."), "__init__.py")
         output_paths.add(output_path)
+
+        google_well_known_types = set()
+        for service in output_package.services:
+            dependencies = filter(
+                lambda d: d.startswith("google/protobuf"),
+                service.parent.package_proto_obj.dependency,
+            )
+            google_well_known_types.update(
+                [d.split("/")[-1].replace(".proto", "") for d in dependencies]
+            )
+        output_package.google_well_known_types = sorted(list(google_well_known_types))
 
         response.file.append(
             CodeGeneratorResponseFile(
@@ -172,9 +183,7 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
     return response
 
 
-def _get_serialized_descriptor(
-    pb2_file_name: str, remove_pb2: bool
-) -> Optional[bytes]:
+def _get_serialized_descriptor(pb2_file_name: str, remove_pb2: bool) -> Optional[bytes]:
     descriptor: Optional[bytes] = None
     try:
         file = open(pb2_file_name, "r")

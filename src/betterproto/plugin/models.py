@@ -255,6 +255,7 @@ class OutputTemplate:
     pydantic_dataclasses: bool = False
     output: bool = True
     serialized_descriptor: Optional[bytes] = None
+    google_well_known_types: List[str] = field(default_factory=list)
 
     @property
     def package(self) -> str:

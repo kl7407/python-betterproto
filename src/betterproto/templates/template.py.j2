@@ -43,6 +43,10 @@ import grpclib
 {{ i }}
 {% endfor %}
 
+{% for well_known_type in output_file.google_well_known_types %}
+from google.protobuf import {{well_known_type}}_pb2 as google_dot_protobuf_dot_{{well_known_type}}__pb2
+{% endfor %}
+
 {% if output_file.imports_type_checking_only %}
 from typing import TYPE_CHECKING
 
