@@ -1,4 +1,6 @@
+import os
 import pathlib
+import re
 import sys
 from typing import (
     Generator,
@@ -6,6 +8,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Optional,
 )
 
 from betterproto.lib.google.protobuf import (
@@ -74,8 +77,10 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
     response.supported_features = CodeGeneratorResponseFeature.FEATURE_PROTO3_OPTIONAL
 
     request_data = PluginRequestCompiler(plugin_request_obj=request)
+    proto_file_names: List[str] = []
     # Gather output packages
     for proto_file in request.proto_file:
+        proto_file_names.append(proto_file.name)
         output_package_name = proto_file.package
         if output_package_name not in request_data.output_packages:
             # Create a new output if there is no output for this package
@@ -98,12 +103,26 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
                 output_package_name
             ].pydantic_dataclasses = True
 
+    # Check a pb2 file is already exist or not
+    existing_pb2_file_names = set()
+    for file_name in proto_file_names:
+        pb2_file_name = file_name.replace(".proto", "_pb2.py")
+        if pathlib.Path(pb2_file_name).exists():
+            existing_pb2_file_names.add(pb2_file_name)
+    os.system(
+        f"python -m grpc_tools.protoc -I . --python_out=. {' '.join(proto_file_names)}"
+    )
+
     # Read Messages and Enums
     # We need to read Messages before Services in so that we can
     # get the references to input/output messages for each service
     for output_package_name, output_package in request_data.output_packages.items():
         for proto_input_file in output_package.input_files:
-            output_package.serialized_descriptor = proto_input_file.SerializeToString()
+            pb2_file_name = proto_input_file.name.replace(".proto", "_pb2.py")
+            output_package.serialized_descriptor = _get_serialized_descriptor(
+                pb2_file_name=pb2_file_name,
+                remove_pb2=pb2_file_name not in existing_pb2_file_names
+            )
             for item, path in traverse(proto_input_file):
                 read_protobuf_type(
                     source_file=proto_input_file,
@@ -151,6 +170,31 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
         print(f"Writing {output_package_name}", file=sys.stderr)
 
     return response
+
+
+def _get_serialized_descriptor(
+    pb2_file_name: str, remove_pb2: bool
+) -> Optional[bytes]:
+    descriptor: Optional[bytes] = None
+    try:
+        file = open(pb2_file_name, "r")
+        for line in file.readlines():
+            if line.startswith("DESCRIPTOR"):
+                pattern = re.compile(
+                    r"DESCRIPTOR = _descriptor_pool.Default\(\).AddSerializedFile\((b'[\w\W]*')\)$"
+                )
+                descriptor = eval(pattern.search(line).groups()[0])
+                descriptor = descriptor if isinstance(descriptor, bytes) else None
+                break
+        file.close()
+        if remove_pb2:
+            file_path = pathlib.Path(pb2_file_name)
+            file_path.unlink(missing_ok=True)
+    except (FileNotFoundError, NameError) as e:
+        descriptor = None
+        print("Failed to create a descriptor.", file=sys.stderr)
+        print(e, file=sys.stderr)
+    return descriptor
 
 
 def _make_one_of_field_compiler(
