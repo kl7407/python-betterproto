@@ -147,16 +147,14 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
         output_path = pathlib.Path(*output_package_name.split("."), "__init__.py")
         output_paths.add(output_path)
 
-        google_well_known_types = set()
         for service in output_package.services:
             dependencies = filter(
                 lambda d: d.startswith("google/protobuf"),
                 service.parent.package_proto_obj.dependency,
             )
-            google_well_known_types.update(
+            output_package.google_imports.update(
                 [d.split("/")[-1].replace(".proto", "") for d in dependencies]
             )
-        output_package.google_well_known_types = sorted(list(google_well_known_types))
 
         response.file.append(
             CodeGeneratorResponseFile(

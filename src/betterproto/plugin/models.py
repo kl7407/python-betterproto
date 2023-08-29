@@ -247,6 +247,7 @@ class OutputTemplate:
     datetime_imports: Set[str] = field(default_factory=set)
     typing_imports: Set[str] = field(default_factory=set)
     pydantic_imports: Set[str] = field(default_factory=set)
+    google_imports: Set[str] = field(default_factory=set)
     builtins_import: bool = False
     messages: List["MessageCompiler"] = field(default_factory=list)
     enums: List["EnumDefinitionCompiler"] = field(default_factory=list)
@@ -255,7 +256,6 @@ class OutputTemplate:
     pydantic_dataclasses: bool = False
     output: bool = True
     serialized_descriptor: Optional[bytes] = None
-    google_well_known_types: List[str] = field(default_factory=list)
 
     @property
     def package(self) -> str:
