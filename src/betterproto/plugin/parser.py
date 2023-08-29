@@ -187,18 +187,18 @@ def _get_serialized_descriptor(pb2_file_name: str, remove_pb2: bool) -> Optional
     descriptor: Optional[bytes] = None
     try:
         file = open(pb2_file_name, "r")
+        pattern = re.compile(
+            r"DESCRIPTOR = _descriptor_pool.Default\(\).AddSerializedFile\((b'[\w\W]*')\)$"
+        )
         for line in file.readlines():
-            if line.startswith("DESCRIPTOR"):
-                pattern = re.compile(
-                    r"DESCRIPTOR = _descriptor_pool.Default\(\).AddSerializedFile\((b'[\w\W]*')\)$"
-                )
-                descriptor = eval(pattern.search(line).groups()[0])
+            parsed = pattern.search(line)
+            if parsed is not None:
+                descriptor = eval(parsed.groups()[0])
                 descriptor = descriptor if isinstance(descriptor, bytes) else None
                 break
         file.close()
         if remove_pb2:
-            file_path = pathlib.Path(pb2_file_name)
-            file_path.unlink(missing_ok=True)
+            pathlib.Path(pb2_file_name).unlink(missing_ok=True)
     except (FileNotFoundError, NameError) as e:
         descriptor = None
         print("Failed to create a descriptor.", file=sys.stderr)
