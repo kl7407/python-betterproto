@@ -748,6 +748,20 @@ class ServiceMethodCompiler(ProtoContentBase):
             "from grpclib.metadata import Deadline"
         )
 
+        # add input and output type to OutputTemplate.imports with no doubt.
+        get_type_reference(
+            package=self.output_file.package,
+            imports=self.output_file.imports,
+            source_type=self.proto_obj.input_type,
+            unwrap=False,
+        )
+        get_type_reference(
+            package=self.output_file.package,
+            imports=self.output_file.imports,
+            source_type=self.proto_obj.output_type,
+            unwrap=False,
+        )
+
         super().__post_init__()  # check for unset fields
 
     @property
