@@ -103,6 +103,7 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
                 output_package_name
             ].pydantic_dataclasses = True
 
+    is_google_proto_exists = pathlib.Path("google/protobuf").exists()
     # Check a pb2 file is already exist or not
     existing_pb2_file_names = set()
     for file_name in proto_file_names:
@@ -130,6 +131,8 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
                     path=path,
                     output_package=output_package,
                 )
+    if not is_google_proto_exists:
+        pathlib.Path("google/protobuf").unlink(missing_ok=True)
 
     # Read Services
     for output_package_name, output_package in request_data.output_packages.items():
