@@ -150,6 +150,15 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
         output_path = pathlib.Path(*output_package_name.split("."), "__init__.py")
         output_paths.add(output_path)
 
+        for message in output_package.messages:
+            dependencies = filter(
+                lambda d: d.startswith("google/protobuf"),
+                message.source_file.dependency,
+            )
+            output_package.google_imports.update(
+                [d.split("/")[-1].replace(".proto", "") for d in dependencies]
+            )
+
         for service in output_package.services:
             dependencies = filter(
                 lambda d: d.startswith("google/protobuf"),
